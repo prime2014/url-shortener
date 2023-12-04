@@ -1,9 +1,5 @@
 import { AuthGuard } from "@nestjs/passport";
-import { UnauthorizedException, ExecutionContext, Injectable, CanActivate } from "@nestjs/common";
-import { Request } from "express";
-import { ConfigService } from "@nestjs/config";
-import { JwtService } from "@nestjs/jwt";
-import { PrismaService } from "src/prisma/prisma.service";
+import { UnauthorizedException, Injectable } from "@nestjs/common";
 
 
 @Injectable()
