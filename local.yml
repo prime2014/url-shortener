@@ -1,0 +1,54 @@
+version: "3"
+
+volumes:
+  urlshortener_db: {}
+
+services:
+  postgres:
+    restart: on-failure
+    image: postgres:12
+    container_name: urlshortener_local_postgres
+    env_file:
+      - ./.env
+    volumes:
+      - urlshortener_db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - url-net
+  
+  redis:
+    image: "redis"
+    container_name: urlshortener_local_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./rod:/data
+    restart: on-failure
+    networks:
+      - url-net
+
+  backend:
+    restart: on-failure
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    build:
+      context: .
+      dockerfile: ./utils/Dockerfile
+    image: urlshortener_image_backend
+    container_name: urshortener_local_backend
+    volumes:
+      - ./:/url-shortener
+      - /node_modules
+    env_file:
+      - ./.env
+    ports:
+      - "3333:3333"
+    command: >
+      /bin/bash -c "npm run start:dev"
+    networks:
+      - url-net
+
+networks:
+  url-net:
+    driver: bridge

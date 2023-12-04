@@ -1,0 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Urlstatus {
+  id Int  @id @default(autoincrement())
+
+  delivered_to String // this can be email
+
+  long_url String
+  short_url String @unique
+
+  status String
+  source String
+
+  clicks Int? @default(0)
+  code String @unique
+  clickSource ClickLocation[]
+  createdAt DateTime? @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("urlstatus")
+}
+
+
+model ClickLocation {
+  id Int @id @default(autoincrement())
+  ip String
+  country String
+  county String
+  city String
+  lat String
+  lon String
+  browser String?
+  platform String?
+  referrer String?
+
+  timestamp DateTime? @default(now())
+  urlId Int 
+  click Urlstatus @relation(fields: [urlId], references: [id])
+  @@map("clicklocation")
+}
+
+
+
+model Users {
+  id Int @id @default(autoincrement())
+
+  firstname String
+  lastname String
+
+  email String @unique
+  password String
+
+  refreshToken String?
+  createdAt DateTime? @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+
+model Apikey {
+  id Int @id @default(autoincrement())
+  key String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("apikey")
+}
