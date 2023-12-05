@@ -5,9 +5,7 @@ import { UrlModule } from './url/url.module';
 // import { UrlService } from './url/url.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 // import { PrismaModule } from './prisma/prisma.module';
-import * as redisStore from 'cache-manager-redis-store';
-import { CacheModule } from "@nestjs/cache-manager";
-import { MurLockModule } from "murlock";
+
 import { ThrottlerModule } from "@nestjs/throttler";
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
@@ -18,12 +16,12 @@ import { PrismaModule } from './prisma/prisma.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    MurLockModule.registerSync({
-      redisOptions: { url: process.env.REDIS_URL },
-      wait: 3000,
-      maxAttempts: 5,
-      logLevel: "log",
-    }),
+    // MurLockModule.registerSync({
+    //   redisOptions: { url: process.env.REDIS_URL },
+    //   wait: 3000,
+    //   maxAttempts: 5,
+    //   logLevel: "log",
+    // }),
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -37,12 +35,14 @@ import { PrismaModule } from './prisma/prisma.module';
     UrlModule,
     PrismaModule,
   
-    CacheModule.register({ 
-      isGlobal: true,
-      store: redisStore,
-      host: process.env.REDIS_HOST,
-      port: process.env.REDIS_PORT
-    }), UsersModule, AuthModule
+    // CacheModule.register({ 
+    //   isGlobal: true,
+    //   store: redisStore,
+    //   host: process.env.REDIS_HOST,
+    //   port: process.env.REDIS_PORT
+    // }), 
+    UsersModule, 
+    AuthModule
     ],
   controllers: [UrlController],
   providers: [UrlService]

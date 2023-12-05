@@ -2,8 +2,6 @@ import { Injectable,  BadRequestException, HttpException, HttpStatus, Inject, In
 import { ShortenURLDto } from 'src/dto/url.dto';
 import { isURL } from 'class-validator';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { MurLockService } from 'murlock';
-import { UrlStatusDto } from './dto/urlstatus.dto';
 import { ConfigService } from '@nestjs/config';
 import { Base62Converter } from './base62_encode';
 import * as argon from "argon2";
@@ -29,7 +27,7 @@ export class UrlService {
     constructor(
         private prisma: PrismaService, 
       
-        private murLockService: MurLockService, 
+        // private murLockService: MurLockService,
         private config: ConfigService,
     ) {}
     
