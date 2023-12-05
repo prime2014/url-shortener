@@ -129,7 +129,7 @@ export class UrlService {
     
             // if both the url and the ipLocation data are found save the result to db else error out
             if (urlLink && ipLocation.data) {
-                console.log(ipLocation.data)
+                // console.log(ipLocation.data)
                 // update the click counter of the clicked url
                 result = await this.prisma.urlstatus.update({
                     where: {
@@ -143,7 +143,7 @@ export class UrlService {
                     throw new HttpException("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR)
                 })
 
-                console.log(result);
+                // console.log(result);
                 // if resp then create the iplocation
                 if(result) {
                     let iploc = await this.prisma.clickLocation.create({
@@ -163,9 +163,9 @@ export class UrlService {
                     }).catch(error=> {
                         throw new InternalServerErrorException("Internal server error")
                     })
-                    console.log(iploc)
+                    console.log("MY RESULT: ", result)
                 }
-                return result;
+                return result.long_url;
             } else {
                 throw new InternalServerErrorException("There was an internal server error");
             }

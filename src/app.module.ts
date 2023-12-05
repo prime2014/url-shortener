@@ -11,7 +11,9 @@ import { MurLockModule } from "murlock";
 import { ThrottlerModule } from "@nestjs/throttler";
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
-
+import { UrlController } from './url/url.controller';
+import { UrlService } from './url/url.service';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
@@ -33,17 +35,17 @@ import { AuthModule } from './auth/auth.module';
       ]
     }),
     UrlModule,
-    // PrismaModule,
+    PrismaModule,
   
     CacheModule.register({ 
       isGlobal: true,
       store: redisStore,
       host: process.env.REDIS_HOST,
       port: process.env.REDIS_PORT
-    }), //UsersModule, AuthModule
+    }), UsersModule, AuthModule
     ],
-  // controllers: [UrlController],
-  // providers: [UrlService]
+  controllers: [UrlController],
+  providers: [UrlService]
 })
 export class AppModule {
  

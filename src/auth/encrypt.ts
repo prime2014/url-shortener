@@ -1,34 +1,29 @@
-import { createCipheriv, randomBytes, scrypt, createDecipheriv } from 'crypto';
-import { promisify } from 'util';
+import { randomBytes, createCipheriv, createDecipheriv } from "crypto";
 
+
+const algorithm = 'aes-256-cbc'; //Using AES encryption
+const key = randomBytes(32);
 const iv = randomBytes(16);
-const password = 'Password used to generate key';
 
-// The key length is dependent on the algorithm.
-// In this case for aes256, it is 32 bytes.
-async function encryptKey() {
-  const key = (await promisify(scrypt)(password, 'salt', 32)) as Buffer;
-  const cipher = createCipheriv('aes-256-ctr', key, iv);
-
-  const textToEncrypt = 'Nest';
-  const encryptedText = Buffer.concat([
-    cipher.update(textToEncrypt),
-    cipher.final(),
-  ]);
-
-  return encryptedText;
+export function encrypt(text) {
+  let cipher = createCipheriv('aes-256-cbc', Buffer.from(key), iv);
+  let encrypted = cipher.update(text);
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  return { iv: iv.toString('hex'), encryptedData: encrypted.toString('hex') };
 }
 
-
-
-async function decryptText(encryptedText) {
-  const key = (await promisify(scrypt)(password, 'salt', 32)) as Buffer;
-  const decipher = createDecipheriv('aes-256-ctr', key, iv);
-  const decryptedText = Buffer.concat([
-    decipher.update(encryptedText),
-    decipher.final(),
-  ]);
-
-  return decryptText
+// Decrypting text
+export function decrypt(text) {
+  let iv = Buffer.from(text.iv, 'hex');
+  let encryptedText = Buffer.from(text.encryptedData, 'hex');
+  let decipher = createDecipheriv('aes-256-cbc', Buffer.from(key), iv);
+  let decrypted = decipher.update(encryptedText);
+  decrypted = Buffer.concat([decrypted, decipher.final()]);
+  return decrypted.toString();
 }
+
+// // Text send to encrypt function
+// var hw = encrypt("Welcome to Tutorials Point...")
+// console.log(hw)
+// console.log(decrypt(hw))
 

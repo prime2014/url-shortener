@@ -5,6 +5,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 
+
 @Injectable()
 export class AuthService {
     // private const apikey = "dhshshhhshshshs"
@@ -14,10 +15,48 @@ export class AuthService {
     async validateApiKey(apiKey: string): Promise<boolean> {
         let secret_api_key = await this.prisma.apikey.findFirst({
             where: {
-                id:1
+                key:apiKey
             }
         })
         return secret_api_key.key == apiKey
+    }
+
+    async getKey() {
+
+        let apiKey = await this.prisma.apikey.findFirst({
+            where: {
+                id:4
+            }
+        })
+        console.log("API KEY ENCRYPTED: ", apiKey)
+        // let normal = decrypt(apiKey.key)
+        // console.log('NORMAL TEXT: ', normal)
+        if(apiKey.key) {
+            return  {
+                apiKey: apiKey.key
+            }
+        } else {
+            throw new NotFoundException("Key was not found!")
+        }
+    }
+
+    async setApiKey(aKey: string) {
+        
+        await this.prisma.apikey.upsert({
+            where: {
+                id: 4
+            },
+            update: {
+                key: aKey
+            },
+            create: {
+                key: aKey
+            }
+        })
+
+        return {
+            apiKey: aKey
+        }
     }
 
     async signToken(userId: number, email: string) {
