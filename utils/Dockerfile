@@ -5,9 +5,7 @@ WORKDIR /url-shortener
 
 COPY ./package.json /url-shortener/
 
-USER 0
-
-RUN npm install --target_arch=x64 --target_platform=linux
+RUN npm install -g npm@10.2.4
 
 RUN useradd -ms /bin/bash 1000
 
