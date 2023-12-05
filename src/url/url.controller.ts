@@ -43,7 +43,7 @@ export class UrlController {
         let metadata = {
             userAgent: agent,
             ip: req.ip,
-            referrer: code ? `${req.hostname}:3333` : null,
+            referrer: code ? `http://${req.hostname}:3333` : null,
             browser: uap(agent)["browser"]["name"],
             platform: uap(agent)["os"]["name"]
         }
