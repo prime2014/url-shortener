@@ -15,7 +15,7 @@ export class JwtAuthGuard extends AuthGuard("jwt") {
         console.log(user)
         console.log(info)
         if (err || !user) {
-        throw err || new UnauthorizedException();
+        throw err || new UnauthorizedException("Your token is invalid! Sign in again or refresh token");
         }
         return user;
     }

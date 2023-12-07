@@ -19,6 +19,7 @@ async function bootstrap() {
               .setDescription("An API Service used to generate shortened url links out of long ones")
               .setVersion("1.0")
               .addTag("url")
+              .addServer("http://qr.isale.co.ke")
               .addServer("http://localhost:3333")
               .addServer("http://194.233.173.243:3333")
               .addBearerAuth()

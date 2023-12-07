@@ -56,7 +56,8 @@
     "short-uuid": "^4.2.2",
     "slugid": "^5.0.1",
     "ua-parser-js": "^1.0.37",
-    "util": "^0.12.5"
+    "util": "^0.12.5",
+    "uuid-apikey": "^1.5.3"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

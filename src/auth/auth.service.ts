@@ -3,6 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AuthGuard } from '@nestjs/passport';
 import { PrismaService } from 'src/prisma/prisma.service';
+import * as argon from "argon2";
+import { generateKey } from './gen-apikeys';
+
 
 
 
@@ -21,41 +24,25 @@ export class AuthService {
         return secret_api_key.key == apiKey
     }
 
-    async getKey() {
 
-        let apiKey = await this.prisma.apikey.findFirst({
-            where: {
-                id:4
-            }
-        })
-        console.log("API KEY ENCRYPTED: ", apiKey)
-        // let normal = decrypt(apiKey.key)
-        // console.log('NORMAL TEXT: ', normal)
-        if(apiKey.key) {
-            return  {
-                apiKey: apiKey.key
-            }
-        } else {
-            throw new NotFoundException("Key was not found!")
-        }
-    }
-
-    async setApiKey(aKey: string) {
-        
+    async setApiKey() {
+        const key = generateKey()
+        const hashed = await argon.hash(key)
         await this.prisma.apikey.upsert({
             where: {
-                id: 4
+                id:1
             },
             update: {
-                key: aKey
+                key: hashed
             },
             create: {
-                key: aKey
+                key: hashed
             }
         })
 
         return {
-            apiKey: aKey
+            message: "Please copy this api key and store it somewhere safe.It will only be displayed once",
+            apiKey: key
         }
     }
 

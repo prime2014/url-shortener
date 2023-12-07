@@ -12,7 +12,7 @@ export class ApiKeyStrategy extends PassportStrategy(HeaderAPIKeyStrategy, 'api-
       if(this.authService.validateApiKey(apiKey)) {
         done(null, true)
       }
-      done(new UnauthorizedException(), null)
+      done(new UnauthorizedException("You don't have the right access permissions!"), null)
     });
   }
 

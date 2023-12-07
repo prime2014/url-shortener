@@ -57,6 +57,7 @@ export class UsersService {
                     email: email
                 }
             })
+            console.log(user)
             if(!user) throw new ForbiddenException("Invalid Credentials!")
 
             const pwMatches = await argon.verify(user.password, password)

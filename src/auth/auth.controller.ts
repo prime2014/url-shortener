@@ -11,18 +11,11 @@ export class AuthController {
 
     constructor(private authService: AuthService){}
 
-    @UseGuards(JwtAuthGuard)
-    @ApiBearerAuth()
-    @Get("/get/key")
-    async getApiKey() {
-        return await this.authService.getKey()
-    }
 
     @UseGuards(JwtAuthGuard)
-    @ApiBearerAuth()
     @Post("/set/key")
-    async setApiKey(@Body() apiKey: AuthDto) {
-        return await this.authService.setApiKey(apiKey.apiKey)
+    async setApiKey() {
+        return await this.authService.setApiKey()
     }
     
 }
