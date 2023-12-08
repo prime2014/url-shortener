@@ -13,6 +13,7 @@ export class AuthController {
 
 
     @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Post("/set/key")
     async setApiKey() {
         return await this.authService.setApiKey()
