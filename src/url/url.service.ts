@@ -100,14 +100,14 @@ export class UrlService {
         return key;
     }
 
-    async clickCounter(code: string, metadata: {protocol: string, ip: string, userAgent: string, referrer: string, browser: string, platform: string}) {
+    async clickCounter(code: string, ip: string, metadata: {protocol: string, userAgent: string, referrer: string, browser: string, platform: string}) {
         
         let result: any;
        
         try {
             // {metadata.ip !== '::1' ? metadata.ip : '8.8.8.8'}
             // concurrently fetch query the ip service and the url from the database
-            let ipUrl = `https://api.ipgeolocation.io/ipgeo?apiKey=${this.config.get("IP_GEOLOCATION_API_KEY")}&ip=${metadata.ip}&fields=geo`
+            let ipUrl = `https://api.ipgeolocation.io/ipgeo?apiKey=${this.config.get("IP_GEOLOCATION_API_KEY")}&ip=${ip}&fields=geo`
             console.log(ipUrl)
             let [ipLocation, urlLink] = await Promise.all([
                 axios.get(ipUrl, {
@@ -125,7 +125,8 @@ export class UrlService {
                     throw new NotFoundException("The url was not found on our servers!")
                 })
             ])
-            
+            console.log("IP GENERATOR LOCATION: ", ipLocation)
+            console.log("urlLink: ", urlLink)
             // if both the url and the ipLocation data are found save the result to db else error out
             if (urlLink && ipLocation.data) {
                 // console.log(ipLocation.data)

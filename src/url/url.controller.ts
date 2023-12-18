@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Res, NestInterceptor, Logger, Injectable, Req, Ip, BadRequestException, UseGuards, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Res, Redirect, NestInterceptor, Logger, Injectable, Req, Ip, BadRequestException, UseGuards, Param, HttpStatus } from '@nestjs/common';
 import { UrlService } from './url.service';
 import { ShortenURLDto } from 'src/dto/url.dto';
 import { UrlStatusDto } from './dto/urlstatus.dto';
@@ -32,29 +32,36 @@ export class UrlController {
         return this.service.shortenUrl(url, hostname, protocol)
     }
 
-
+    @Redirect()
     @Get("/:code")
-    async clickCounter(@Req() req: Request, @Param("code") code: string, @Res({ passthrough: true }) res: Response) {
+    async clickCounter(@Req() req: Request, @Param("code") code: string, @Res({ passthrough: true }) res: Response, @Ip() ip) {
         let agent = req.headers['user-agent']
+	let real_ip = req.headers['x-real-ip']
+	let forwarded = req.headers['x-forwarded-for']
+	let my_real_ip = req.headers['x-real-ip']
         let protocol = req.protocol;
         let referer = req.headers.referer;
         let metadata = {
             protocol: protocol,
             userAgent: agent,
-            ip: req.ip,
             referrer: referer,
             browser: uap(agent)["browser"]["name"],
             platform: uap(agent)["os"]["name"]
         }
         
+	const client_ip = req.clientIp
         
-        let r = await this.service.clickCounter(code, metadata)
+        try {
+            let r = await this.service.clickCounter(code, client_ip, metadata)
         
-        res.header("location", r)
-        res.status(301)
-        return {
-            longUrl: r 
+            return {
+            statusCode: HttpStatus.PERMANENT_REDIRECT,
+                url: r 
+            }
+        } catch(error) {
+            throw error;
         }
+        
     }
 
     
