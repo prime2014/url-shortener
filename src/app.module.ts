@@ -12,16 +12,15 @@ import { AuthModule } from './auth/auth.module';
 import { UrlController } from './url/url.controller';
 import { UrlService } from './url/url.service';
 import { PrismaModule } from './prisma/prisma.module';
+import sendgridConfig from "./sendgrid.config";
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    // MurLockModule.registerSync({
-    //   redisOptions: { url: process.env.REDIS_URL },
-    //   wait: 3000,
-    //   maxAttempts: 5,
-    //   logLevel: "log",
-    // }),
+    ConfigModule.forRoot({ 
+      isGlobal: true,
+      load: [sendgridConfig]
+    }),
+   
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -35,12 +34,7 @@ import { PrismaModule } from './prisma/prisma.module';
     UrlModule,
     PrismaModule,
   
-    // CacheModule.register({ 
-    //   isGlobal: true,
-    //   store: redisStore,
-    //   host: process.env.REDIS_HOST,
-    //   port: process.env.REDIS_PORT
-    // }), 
+  
     UsersModule, 
     AuthModule
     ],

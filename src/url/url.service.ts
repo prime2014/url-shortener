@@ -18,7 +18,7 @@ async function getBase62EncodedString(): Promise<string|null> {
 }
 
 
-
+// nestjs service
 
 @Injectable()
 export class UrlService {
@@ -45,7 +45,7 @@ export class UrlService {
             let short_code_url = `${protocol}://${hostname}/${myresp}`;
 
             //query the db to find if the encoded short url exists
-            await this.prisma.urlstatus.findUnique({
+            return await this.prisma.urlstatus.findUnique({
                 where: {
                     short_url: short_code_url
                 }
@@ -59,7 +59,7 @@ export class UrlService {
                     }   
                 } else {
                     // await this.cacheService.set("mycounter", counter + 1)
-                    await this.prisma.urlstatus.create({
+                    let urlResponse = await this.prisma.urlstatus.create({
                         data: {
                             delivered_to: delivered_to,
                             long_url: longUrl,
@@ -73,6 +73,11 @@ export class UrlService {
                         console.log(error)
                         return new HttpException("The server encountered an error", HttpStatus.INTERNAL_SERVER_ERROR)
                     })
+
+                    if (urlResponse) return {
+                        longUrl,
+                        shortUrl: short_code_url
+                    }
                 }
                 
             }).catch(error=>{
@@ -80,10 +85,7 @@ export class UrlService {
                return new InternalServerErrorException("There was an internal server error")
             })
             
-            return {
-                longUrl,
-                shortUrl: short_code_url
-            }
+            
         } catch(error) {
             throw error
         }
@@ -100,79 +102,65 @@ export class UrlService {
         return key;
     }
 
-    async clickCounter(code: string, ip: string, metadata: {protocol: string, userAgent: string, referrer: string, browser: string, platform: string}) {
-        
-        let result: any;
-       
+    async clickCounter(code: string, ip: string, metadata: { protocol: string; userAgent: string; referrer: string; browser: string; platform: string }) {
         try {
-            // {metadata.ip !== '::1' ? metadata.ip : '8.8.8.8'}
-            // concurrently fetch query the ip service and the url from the database
-            let ipUrl = `https://api.ipgeolocation.io/ipgeo?apiKey=${this.config.get("IP_GEOLOCATION_API_KEY")}&ip=${ip}&fields=geo`
-            console.log(ipUrl)
-            let [ipLocation, urlLink] = await Promise.all([
-                axios.get(ipUrl, {
+            // Fetch IP location data and URL from the database concurrently
+            const [ipLocation, urlLink] = await Promise.all([
+                axios.get(`https://api.ipgeolocation.io/ipgeo?apiKey=${process.env.IP_GEOLOCATION_API_KEY}&ip=${ip}&fields=geo`, {
                     headers: {
-                        "Content-Type": "application/json"
-                    }
-                }).catch(error=> {
-                    throw error;
+                        'Content-Type': 'application/json',
+                    },
                 }),
                 this.prisma.urlstatus.findFirst({
                     where: {
-                        code: code
-                    }
-                }).catch(error=> {
-                    throw new NotFoundException("The url was not found on our servers!")
-                })
-            ])
-            console.log("IP GENERATOR LOCATION: ", ipLocation)
-            console.log("urlLink: ", urlLink)
-            // if both the url and the ipLocation data are found save the result to db else error out
-            if (urlLink && ipLocation.data) {
-                // console.log(ipLocation.data)
-                // update the click counter of the clicked url
-                result = await this.prisma.urlstatus.update({
+                        code,
+                    },
+                }),
+            ]);
+
+            // Check if both URL and IP location data are found
+            if (urlLink && ipLocation?.data) {
+                // Update the click counter of the clicked URL
+                const result = await this.prisma.urlstatus.update({
                     where: {
-                        code: urlLink.code 
+                        code: urlLink.code,
                     },
                     data: {
-                        clicks: urlLink.clicks + 1
-                    }
-                }).catch(error=>{
-                    console.log(error)
-                    throw new HttpException("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR)
-                })
+                        clicks: urlLink.clicks + 1,
+                    },
+                });
 
-                // console.log(result);
-                // if resp then create the iplocation
-                if(result) {
-                    let iploc = await this.prisma.clickLocation.create({
-                        data: {
-                            urlId: result.id,
-                            ip: ipLocation.data.ip,
-                            country: ipLocation.data.country_name,
-                            city: ipLocation.data.city,
-                            lat: ipLocation.data.latitude,
-                            lon: ipLocation.data.longitude,
-                            county: ipLocation.data.state_prov,
-                            referrer: metadata.referrer,
-                            browser: metadata.browser,
-                            platform: metadata.platform
-                        }
-                    
-                    }).catch(error=> {
-                        throw new InternalServerErrorException("Internal server error")
-                    })
-                    console.log("MY RESULT: ", result)
-                }
+                // Create IP location record
+                await this.prisma.clickLocation.create({
+                    data: {
+                        urlId: result.id,
+                        ip: ipLocation.data.ip,
+                        country: ipLocation.data.country_name,
+                        city: ipLocation.data.city,
+                        lat: ipLocation.data.latitude,
+                        lon: ipLocation.data.longitude,
+                        county: ipLocation.data.state_prov,
+                        referrer: metadata.referrer,
+                        browser: metadata.browser,
+                        platform: metadata.platform,
+                    },
+                });
+
                 return result.long_url;
             } else {
-                throw new InternalServerErrorException("There was an internal server error");
+                throw new NotFoundException('URL not found or invalid IP location data.');
             }
-            
-        } catch(error) {
-            return new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR)
+        } catch (error) {
+            // Handle specific errors and provide appropriate responses
+            if (error instanceof NotFoundException) {
+                throw error;
+            } else if (error.response) {
+                throw new HttpException(error.response.data, error.response.status);
+            } else {
+                throw new InternalServerErrorException('Internal server error');
+            }
         }
-        
     }
 }
+
+

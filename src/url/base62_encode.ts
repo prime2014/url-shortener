@@ -60,6 +60,6 @@ export class Base62Converter {
 
 const encoder = new Base62Converter()
 
-encoder.getBase62Parallel().then(resp=> console.log(resp))
+encoder.getBase62Parallel().then(resp=> resp)
 
 

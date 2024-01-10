@@ -24,8 +24,8 @@ model Urlstatus {
   clicks Int? @default(0)
   code String @unique
   clickSource ClickLocation[]
-  createdAt DateTime? @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime? @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
   @@map("urlstatus")
 }
 
@@ -42,9 +42,9 @@ model ClickLocation {
   platform String?
   referrer String?
 
-  timestamp DateTime? @default(now())
+  timestamp DateTime? @default(now()) @db.Timestamptz(3)
   urlId Int 
-  click Urlstatus @relation(fields: [urlId], references: [id])
+  click Urlstatus @relation(fields: [urlId], references: [id], onDelete: Cascade)
   @@map("clicklocation")
 }
 
@@ -60,8 +60,10 @@ model Users {
   password String
 
   refreshToken String?
-  createdAt DateTime? @default(now())
-  updatedAt DateTime @updatedAt
+  resetToken String?
+  resetTokenExpiry DateTime? @db.Timestamptz(3)
+  createdAt DateTime? @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   @@map("users")
 }
@@ -70,8 +72,8 @@ model Users {
 model Apikey {
   id Int @id @default(autoincrement())
   key String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   @@map("apikey")
 }

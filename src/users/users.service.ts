@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { SignupDto, LoginDto } from './dto/user.dto';
 import * as argon from "argon2";
@@ -6,12 +6,133 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ConfigService } from '@nestjs/config';
 
 import { AuthService } from 'src/auth/auth.service';
-import { Users } from '@prisma/client';
+import * as bcrypt from "bcrypt"
+import * as fs from "fs";
+import  * as amqp from "amqplib/callback_api";
+import * as sgMail from "@sendgrid/mail";
+import { BadRequestError } from 'passport-headerapikey';
 
 @Injectable()
 export class UsersService {
-    constructor(private prisma: PrismaService, private config: ConfigService, private auth: AuthService) {}
+    constructor(private prisma: PrismaService, private configService: ConfigService, private auth: AuthService) {
+        sgMail.setApiKey(this.configService.get<string>("sendgrid.apiKey"))
+    }
 
+
+    async resetPassword(resetToken: string, newPassword: string) {
+        // Find the user with the provided reset token
+        const user = await this.prisma.users.findFirst({
+            where: {
+                resetToken,
+                resetTokenExpiry: {
+                    gte: new Date() // ensure the reset token is not expired
+                }
+            }
+        })
+
+        if (!user) {
+            throw new NotFoundException("Invalid or expired token!")
+        }
+
+        // Hash the new password
+        const hashedPassword = await argon.hash(newPassword)
+
+        // update the user's password and clear the reset token
+        try {
+            const updatedUser = await this.prisma.users.update({
+                where: {
+                    id: user.id
+                },
+                data: {
+                    password: hashedPassword,
+                    resetToken: null,
+                    resetTokenExpiry: null
+                }
+            })
+            return updatedUser
+        } catch(error) {
+            throw error;
+        }
+        
+    }
+
+    async generatePasswordResetToken(user):Promise<string> {
+        try {
+            const resetToken = await bcrypt.hash(`${user.id}${Date.now()}`, 10)
+
+            // Save the reset token in the db
+            await this.prisma.users.update({
+                where: {
+                    id: user.id
+                },
+                data: {
+                    resetToken,
+                    resetTokenExpiry: new Date(Date.now() + 3600000) // token expires in 1 hr
+                }
+            })
+
+            return resetToken
+        } catch(error) {
+            throw error;
+        }
+
+    }
+
+    private mergeTemplateWithData(template: string, data: Record<string, string>): string {
+        // Replace variables in the template with actual data
+        Object.keys(data).forEach(key => {
+          const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
+          template = template.replace(regex, data[key]);
+        });
+    
+        return template;
+      }
+
+    async sendPasswordResetEmail(email: string, resetToken: string) {
+        const templateData = {username: "Prime Omondi", resetToken}
+        const templatePath = "./src/templates/passwordReset.html";
+        const htmlTemplate = fs.readFileSync(templatePath, "utf-8");
+        const mergedContent = this.mergeTemplateWithData(htmlTemplate, templateData)
+        try {
+            
+            const queueUrl = this.configService.get<string>("RABBITMQ_QUEUE_URL")
+
+            const msg = {
+                to: email,
+                from: "sage.prime@mail.com",
+                subject: "RESET YOUR PASSWORD",
+                html: mergedContent,
+            }
+
+            amqp.connect(queueUrl, (error0, connection)=> {
+                if (error0) throw(error0);
+
+                connection.createChannel((error1, channel)=> {
+                    if (error1) throw(error1);
+
+                    const queue = "password_reset";
+
+
+                    channel.assertQueue(queue, {
+                        durable: true
+                    })
+
+
+                    channel.sendToQueue(queue, Buffer.from(JSON.stringify(msg)), {
+                        persistent: true
+                    })
+                })
+
+                setTimeout(()=>{
+                    connection.close()
+                }, 5000)
+            })
+            return "Email is queued to be delivered"
+        } catch(error) {
+            console.error("Error sending email: ", error)
+            return error;
+        }
+    }
 
     async signup(dto: SignupDto) {
         // generate the password and save user to db, then return new user
@@ -147,5 +268,52 @@ export class UsersService {
         
     }
 
-   
+    async updateUser(user, data, userId) {
+        let { id } = user;
+        if (id !== userId) throw new BadRequestException("Bad Request Exception!")
+        try {
+            let user = await this.prisma.users.update({
+                where: {
+                    id
+                },
+                data
+            })
+            delete user.password
+            delete user.refreshToken
+            delete user.resetToken
+            delete user.resetTokenExpiry
+            return user
+        } catch(error) {
+            throw error
+        }
+    }
+
+    async findUserByEmail(email: string) {
+        try {
+            return await this.prisma.users.findUnique({
+                where: {
+                    email
+                }
+            })
+        } catch(error) {
+            throw error;
+        }
+    }
+
+    async deleteUser(user: any, userId: Number) {
+        let { id } = user
+
+        if (id !== userId) throw new BadRequestException('Bad Request Exception');
+        try {
+            const user = this.prisma.users.delete({
+                where: {
+                    id
+                }
+            })
+            return user
+        } catch(error) {
+            throw error;
+        }
+        
+    }
 }

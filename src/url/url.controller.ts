@@ -26,19 +26,23 @@ export class UrlController {
     @ApiResponse({ status: 401, description: "Unauthorised" })
     @ApiResponse({ status: 400, description: "Bad request" })
     @ApiResponse({ status: 500, description: "Internal server error" })
-    async shortenUrl(@Body() url: ShortenURLDto, @Req() req: Request) {
+    async shortenUrl(@Body() url: ShortenURLDto, @Req() req: Request, @Res() res: Response) {
         let hostname =req.hostname;
         let protocol = req.protocol;
-        return this.service.shortenUrl(url, hostname, protocol)
+        try {
+            let resp = await this.service.shortenUrl(url, hostname, protocol)
+            
+            return res.status(201).json(resp)
+        } catch(error){
+            return res.json(error.response)
+        }
     }
 
-    @Redirect()
+    
     @Get("/:code")
     async clickCounter(@Req() req: Request, @Param("code") code: string, @Res({ passthrough: true }) res: Response, @Ip() ip) {
         let agent = req.headers['user-agent']
-	let real_ip = req.headers['x-real-ip']
-	let forwarded = req.headers['x-forwarded-for']
-	let my_real_ip = req.headers['x-real-ip']
+	
         let protocol = req.protocol;
         let referer = req.headers.referer;
         let metadata = {
@@ -49,20 +53,39 @@ export class UrlController {
             platform: uap(agent)["os"]["name"]
         }
         
-	const client_ip = req.clientIp
+	    const client_ip = req.clientIp
         
         try {
             let r = await this.service.clickCounter(code, client_ip, metadata)
-        
-            return {
-            statusCode: HttpStatus.PERMANENT_REDIRECT,
-                url: r 
-            }
+            
+            res.redirect(HttpStatus.FOUND, r);
         } catch(error) {
-            throw error;
+            const { status, response } = error;
+                
+            // Check for circular structures before JSON conversion
+            const sanitizedResponse = removeCircularReferences(response);
+
+            res.status(status).json(sanitizedResponse);
         }
         
     }
 
     
 }
+
+function removeCircularReferences(obj: any, seen = new WeakSet()): any {
+    if (obj !== null && typeof obj === 'object') {
+        if (seen.has(obj)) {
+            return '[Circular]';
+        }
+        seen.add(obj);
+        return Array.isArray(obj)
+            ? obj.map((item) => removeCircularReferences(item, seen))
+            : Object.fromEntries(
+                  Object.entries(obj).map(([key, value]) => [key, removeCircularReferences(value, seen)])
+              );
+    }
+    return obj;
+}
+
+
