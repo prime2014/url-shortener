@@ -99,7 +99,7 @@ export class UsersService {
 
             const msg = {
                 to: email,
-                from: "sage.prime@mail.com",
+                from: this.configService.get<string>("DEFAULT_FROM_EMAIL"),
                 subject: "RESET YOUR PASSWORD",
                 html: mergedContent,
             }
@@ -278,12 +278,14 @@ export class UsersService {
                 },
                 data
             })
+
             delete user.password
             delete user.refreshToken
             delete user.resetToken
             delete user.resetTokenExpiry
             return user
         } catch(error) {
+            
             throw error
         }
     }
@@ -317,3 +319,5 @@ export class UsersService {
         
     }
 }
+
+

@@ -60,17 +60,25 @@ export class UpdateDto {
     @ApiProperty()
     @IsString()
     @IsOptional()
+    @IsNotEmpty({
+        message:"Firstname value should not be empty!"
+    })
     firstname?: string
 
     @ApiProperty()
     @IsString()
     @IsOptional()
+    @IsNotEmpty({
+        message: "Lastname value should not be empty!"
+    })
     lastname?: string
 
     @ApiProperty()
-    @IsString()
     @IsEmail()
     @IsOptional()
+    @IsNotEmpty({
+        message: "Email value should not be empty!"
+    })
     email?: string
 }
 

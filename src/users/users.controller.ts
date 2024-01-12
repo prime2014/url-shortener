@@ -85,7 +85,7 @@ export class UsersController {
     @Put("/api/v1/:id/update")
     @ApiParam({ name: "id", type: Number, description: "User id field as saved on the database" })
     async updateUserCredentials(@Param() param: UrlParams, @Req() req: Request, @Res() res: Response, @Body() dto: UpdateDto) {
-        console.log(dto)
+        console.log("THIS IS DTO: ", dto)
         console.log(req.user)
         let { id } = param;
         try {
@@ -93,6 +93,7 @@ export class UsersController {
             return res.status(HttpStatus.OK).json(resp);
         } catch(error) {
             let { status, response } = error;
+            console.log("THIS IS THE ERROR: ", error)
             return res.status(status).json(response)
         }
     }
@@ -160,3 +161,5 @@ export class UsersController {
         }
     }
 }
+
+
