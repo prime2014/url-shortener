@@ -1,4 +1,4 @@
-import { Injectable,  BadRequestException, HttpException, HttpStatus, Inject, InternalServerErrorException, OnModuleInit,  NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, HttpException, HttpStatus, Inject, InternalServerErrorException, OnModuleInit,  NotFoundException } from '@nestjs/common';
 import { ShortenURLDto } from 'src/dto/url.dto';
 import { isURL } from 'class-validator';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -7,6 +7,13 @@ import { Base62Converter } from './base62_encode';
 import * as argon from "argon2";
 import axios from "axios";
 import  * as amqp from "amqplib/callback_api";;
+import { Cache } from 'cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { UrlUpdateDto } from './dto/urlstatus.dto';
+import { generateHexUuid } from './base62_encode';
+
+
+
 
 
 async function getBase62EncodedString(): Promise<string|null> {
@@ -26,12 +33,10 @@ export class UrlService implements OnModuleInit {
     private queueUrl: string
     private retry: number 
     private ipGeolocationQueue: string
-    private client: any
 
     constructor(
         private prisma: PrismaService, 
-      
-        // private murLockService: MurLockService,
+        @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
         private config: ConfigService,
     ) {
         this.queueUrl = this.config.get<string>("RABBITMQ_QUEUE_URL")
@@ -41,9 +46,88 @@ export class UrlService implements OnModuleInit {
     }
 
     onModuleInit() {
+        
         this.startConsumingMessages();
     }
 
+
+    async getUrlsList(limit: number=10, offset: number=0){
+        
+        try {
+            
+            let total = await this.prisma.urlstatus.count()
+            let urls = await this.prisma.urlstatus.findMany({
+                skip: offset,
+                take: limit
+            })
+
+            return {
+                currentPage: Math.floor(offset/ limit) + 1,
+                totalPages: Math.ceil(total / limit),
+                count: total,
+                data: urls,
+            }
+        } catch(error){
+            throw error;
+        }
+    }
+
+    async getClicksList(limit: number=10, offset: number=0){
+        try {
+            let count = await this.prisma.clickLocation.count()
+            let clicks = await this.prisma.clickLocation.findMany({
+                include: {
+                    click: {
+                        select: {
+                            long_url: true,
+                            short_url: true
+                        }
+                    },
+                
+                },
+                skip: offset,
+                take: limit
+            })
+
+            return {
+                currentPage: Math.floor(offset / limit) + 1,
+                totalPages: Math.ceil(count /limit),
+                count,
+                data: clicks
+            }
+        } catch(error){
+            throw error;
+        }
+    }
+
+    async updateShortenedUrls(id: number, data: UrlUpdateDto) {
+        try {
+            let url = await this.prisma.urlstatus.update({
+                where: {
+                    id
+                },
+                data
+            })
+            return url
+        } catch(error){
+            throw error;
+        }
+    }
+
+
+    async deleteShortenedUrls(id: number) {
+        try {
+            let url = await this.prisma.urlstatus.delete({
+                where: {
+                    id
+                }
+            })
+
+            return url;
+        } catch(error) {
+            throw error;
+        }
+    }
     
     private startConsumingMessages() {
         this.connectToRabbitMQ()
@@ -55,7 +139,7 @@ export class UrlService implements OnModuleInit {
           if (error0) {
             console.error('Error connecting to RabbitMQ:', error0.message);
             this.retry += 1
-            setTimeout(this.connectToRabbitMQ, 5000); // Retry after 5 seconds
+            setTimeout(()=>this.connectToRabbitMQ, 5000); // Retry after 5 seconds
             return;
           }
       
@@ -78,28 +162,38 @@ export class UrlService implements OnModuleInit {
 
     private consumeMessages(channel) {
         channel.consume(this.ipGeolocationQueue, async (msg) => {
+          console.log("MESSAGE RECEIVED")
           let mymsg = JSON.parse(msg.content.toString())
 
           let { url, metadata, result } = mymsg;
+          console.log("API URL: ", url)
           try {
-            let ipLocation = await axios.get(url);
+            let ipLocation = await axios.get(url, {
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
             
-            await this.prisma.clickLocation.create({
-                data: {
-                  urlId: result.id,
-                  ip: ipLocation.data.ip,
-                  country: ipLocation.data.country_name,
-                  city: ipLocation.data.city,
-                  lat: ipLocation.data.latitude,
-                  lon: ipLocation.data.longitude,
-                  county: ipLocation.data.state_prov,
-                  referrer: metadata.referrer,
-                  browser: metadata.browser,
-                  platform: metadata.platform,
-                },
-              });
+            if (ipLocation?.data) {
+                await this.prisma.clickLocation.create({
+                    data: {
+                      urlId: result.id,
+                      ip: ipLocation.data.ip,
+                      country: ipLocation.data.country_name,
+                      city: ipLocation.data.city,
+                      lat: ipLocation.data.latitude,
+                      lon: ipLocation.data.longitude,
+                      county: ipLocation.data.state_prov,
+                      referrer: metadata.referrer,
+                      browser: metadata.browser,
+                      platform: metadata.platform,
+                    },
+                  });
+            }
+            
             channel.ack(msg)
           } catch(error){
+            console.log(error)
             return error;
           }
           
@@ -119,49 +213,53 @@ export class UrlService implements OnModuleInit {
            
             // base62 encoding of the counter
             let myresp = await getBase62EncodedString()
+
+        
             
             let short_code_url = `${protocol}://${hostname}/${myresp}`;
 
             //query the db to find if the encoded short url exists
-            return await this.prisma.urlstatus.findUnique({
-                where: {
-                    short_url: short_code_url
-                }
-            }).then(async resp=> {
-                
-                if (resp) {
-                    myresp = await getBase62EncodedString()
-
-                    while (myresp == resp.code) {
-                        myresp =  await getBase62EncodedString()
-                    }   
-                } else {
-                    // await this.cacheService.set("mycounter", counter + 1)
-                    let urlResponse = await this.prisma.urlstatus.create({
-                        data: {
-                            delivered_to: delivered_to,
-                            long_url: longUrl,
-                            short_url: short_code_url,
-                            status: "200/OK",
-                            source: source,
-                            code: myresp,
-                            updatedAt: new Date(Date.now()).toISOString()
-                        }
-                    }).catch(error=>{
-                        console.log(error)
-                        return new HttpException("The server encountered an error", HttpStatus.INTERNAL_SERVER_ERROR)
-                    })
-
-                    if (urlResponse) return {
-                        longUrl,
-                        shortUrl: short_code_url
+            let existingUrl = await this.prisma.urlstatus.findUnique({
+                    where: {
+                        short_url: short_code_url
                     }
-                }
-                
-            }).catch(error=>{
-               // throw an exception
-               return new InternalServerErrorException("There was an internal server error")
             })
+            
+            while (existingUrl) {
+                // if the short code is already in use, generate a new one
+                myresp = await getBase62EncodedString()
+
+                short_code_url = `${protocol}://${hostname}/${myresp}`;
+
+                // check again for uniqueness
+                existingUrl = await this.prisma.urlstatus.findUnique({
+                    where: {
+                        short_url: short_code_url
+                    }
+                })
+            }
+
+            let urlResponse = await this.prisma.urlstatus.create({
+                data: {
+                    delivered_to: delivered_to,
+                    long_url: longUrl,
+                    short_url: short_code_url,
+                    status: "200/OK",
+                    source: source,
+                    code: myresp,
+                    updatedAt: new Date(Date.now()).toISOString()
+                }
+            }).catch(error=>{
+                console.log(error)
+                return new HttpException("The server encountered an error", HttpStatus.INTERNAL_SERVER_ERROR)
+            })
+            console.log(urlResponse)
+            if (urlResponse) {
+                return {
+                    longUrl,
+                    shortUrl: short_code_url
+                }
+            }
             
             
         } catch(error) {
@@ -180,7 +278,37 @@ export class UrlService implements OnModuleInit {
         return key;
     }
 
-    async clickCounter(code: string, ip: string, metadata: { protocol: string; userAgent: string; referrer: string; browser: string; platform: string }) {
+
+    publishClick(msg) {
+        amqp.connect(this.queueUrl, (error0, connection)=> {
+            if (error0) throw(error0);
+
+            connection.createChannel((error1, channel)=> {
+                if (error1) throw(error1);
+
+                const queue: string = this.ipGeolocationQueue;
+
+
+                channel.assertQueue(queue, {
+                    durable: true
+                })
+
+
+                channel.sendToQueue(queue, Buffer.from(JSON.stringify(msg)), {
+                    persistent: true
+                })
+            })
+
+            setTimeout(()=>{
+                connection.close()
+            }, 5000)
+            
+        })
+        return
+    }
+
+
+    async clickCounter(code: string, ip: string, metadata: { protocol: string; userAgent: string; referrer: string; browser: string; platform: string }, cookie) {
         try {
             const url = `https://api.ipgeolocation.io/ipgeo?apiKey=${process.env.IP_GEOLOCATION_API_KEY}&ip=${ip}&fields=geo`
 
@@ -190,8 +318,23 @@ export class UrlService implements OnModuleInit {
                 },
             })
 
+            let cacheKey = `unique_click:${urlLink.code}:${cookie}`;
+
+            console.log("THE CACHE KEY: ", cacheKey)
+
+            const isUniqueClick =  await this.cacheManager.get<string>(cacheKey)
+            console.log('THE COOKIE IS: ', isUniqueClick)
+
+
+            if (isUniqueClick) {
+                // The click is not unique, return the URL without further processing
+                return { url: urlLink.long_url, cookie: null };
+            }
+
+            
 
             if (urlLink) {
+
                 // Update the click counter of the clicked URL
                 const result = await this.prisma.urlstatus.update({
                     where: {
@@ -202,36 +345,32 @@ export class UrlService implements OnModuleInit {
                     },
                 });
 
-                // the ip locator and the saving of the clicklocation will happen through message queue
                 const msg = { url, metadata, result }
-                
-                amqp.connect(this.queueUrl, (error0, connection)=> {
-                    if (error0) throw(error0);
+                if (cookie) {
 
-                    connection.createChannel((error1, channel)=> {
-                        if (error1) throw(error1);
+                    cacheKey = `unique_click:${urlLink.code}:${cookie}`
 
-                        const queue: string = this.ipGeolocationQueue;
-
-
-                        channel.assertQueue(queue, {
-                            durable: true
-                        })
-
-
-                        channel.sendToQueue(queue, Buffer.from(JSON.stringify(msg)), {
-                            persistent: true
-                        })
-                    })
-
-                    setTimeout(()=>{
-                        connection.close()
-                    }, 5000)
+                    // Mark the click as processed in the cache to prevent further processing for the same cookie
+                    await this.cacheManager.set(cacheKey, true, 691200); 
                     
-                })
+                    this.publishClick(msg)
 
+                    return { url: urlLink.long_url, cookie: null }
+                } else {
+                    cookie = generateHexUuid() 
 
-                return result.long_url;
+                    console.log("GENERATED UNIQUE CODE: ", cookie)
+
+                    cacheKey = `unique_click:${urlLink.code}:${cookie}`
+
+                    // Mark the click as processed in the cache to prevent further processing for the same cookie
+                    await this.cacheManager.set(cacheKey, true, 691200); 
+
+                    this.publishClick(msg)
+
+                    return { url: urlLink.long_url, cookie }
+                }
+                
             } else {
                 throw new NotFoundException('URL not found');
             }

@@ -3,7 +3,12 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { HttpExceptionFilter } from './exception.filter';
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
+import * as ejs from "ejs";
+import { NestExpressApplication } from '@nestjs/platform-express';
+import * as cookieParser from "cookie-parser";
+
 const requestIp = require("request-ip")
+
 
 
 process.on('uncaughtException', function (err) {
@@ -12,7 +17,7 @@ process.on('uncaughtException', function (err) {
 });
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   const config = new DocumentBuilder()
               .setTitle("URL Shortener Service")
@@ -22,15 +27,22 @@ async function bootstrap() {
               .addServer("http://qr.isale.co.ke")
               .addServer("http://localhost:3333")
               .addServer("http://localhost:80")
-              .addServer("https://12e0-197-248-49-43.ngrok-free.app")
+              .addServer("https://48f1-102-166-56-27.ngrok-free.app")
+              
               .addBearerAuth()
               .build()
   const document = SwaggerModule.createDocument(app, config)
   SwaggerModule.setup("api", app, document)
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }))
   app.enableCors({origin: "*", methods:"POST"})
+  app.use(cookieParser())
   app.useGlobalFilters(new HttpExceptionFilter());
   app.use(requestIp.mw())
+
+  // Configure EJS as the view engine
+  app.engine('ejs', ejs.renderFile);
+  app.setViewEngine('ejs');
+
   await app.listen(3333);
 }
 bootstrap();

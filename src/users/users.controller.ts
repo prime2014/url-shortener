@@ -28,7 +28,24 @@ export class UsersController {
     async signup(@Body() dto: SignupDto, @Res() res: Response) {
         try {
             let resp = await this.userService.signup(dto)
-            return res.status(HttpStatus.CREATED).json(resp)
+            return res.status(HttpStatus.CREATED).json({
+                statusCode: HttpStatus.CREATED,
+                message: resp
+            })
+        } catch(error) {
+            let { status, response } = error;
+            return res.status(status).json(response)
+        }
+    }
+
+    @Post("/api/v1/account/activation?")
+    async activateAccount(@Query("token") token: string,  @Res() res: Response) {
+        try {
+            let resp = await this.userService.verifyToken(token)
+            return res.status(HttpStatus.OK).json({
+                statusCode: HttpStatus.OK,
+                message: resp
+            });
         } catch(error) {
             let { status, response } = error;
             return res.status(status).json(response)
@@ -113,7 +130,7 @@ export class UsersController {
         }
 
         // generate and save password reset token
-        const resetToken = await this.userService.generatePasswordResetToken(user)
+        const resetToken: any = await this.userService.generatePasswordResetToken(user)
         
         try {
             let resp = await this.userService.sendPasswordResetEmail(user.email, resetToken)

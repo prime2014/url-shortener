@@ -2,14 +2,18 @@ var { v4 } = require("uuid");
 const crypto = require("crypto")
 
 
+export function generateHexUuid(): string {
+  // Generate a version 4 UUID in hex form
+  return v4().replace(/-/g, '');
+}
+
+
 export class Base62Converter {
-    private uuid;
     private base62String: string;
     private minLength: number;
     private maxLength: number;
 
     constructor() {
-        this.uuid = v4();
         this.base62String = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         this.minLength = 4;
         this.maxLength = 8;
@@ -51,9 +55,6 @@ export class Base62Converter {
         return encoded;
     }
 
-    private uuidToDec(): number {
-        return parseInt(this.uuid, 16)
-    }
 
 }
 

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 // import { AuthMiddleware } from './middleware/auth/auth.middleware';
 import { UrlModule } from './url/url.module';
 // import { UrlController } from './url/url.controller';
@@ -13,9 +14,24 @@ import { UrlController } from './url/url.controller';
 import { UrlService } from './url/url.service';
 import { PrismaModule } from './prisma/prisma.module';
 import sendgridConfig from "./sendgrid.config";
+import { CacheModule } from '@nestjs/cache-manager';
+import * as redisStore from "cache-manager-redis-store";
+import { RateLimiterModule, RateLimiterGuard } from 'nestjs-rate-limiter';
 
 @Module({
   imports: [
+    RateLimiterModule.register({
+      keyPrefix: "myRateLimitTrend",
+      points:5,
+      errorMessage: "Too many requests",
+      duration: 60
+    }),
+    CacheModule.register({
+      isGlobal: true,
+      store: redisStore,
+      host: "localhost",
+      port: 6379
+    }),
     ConfigModule.forRoot({ 
       isGlobal: true,
       load: [sendgridConfig]
@@ -39,7 +55,13 @@ import sendgridConfig from "./sendgrid.config";
     AuthModule
     ],
   controllers: [UrlController],
-  providers: [UrlService]
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: RateLimiterGuard
+    },
+    UrlService
+  ]
 })
 export class AppModule {
  
