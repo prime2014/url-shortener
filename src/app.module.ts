@@ -56,10 +56,10 @@ import { RateLimiterModule, RateLimiterGuard } from 'nestjs-rate-limiter';
     ],
   controllers: [UrlController],
   providers: [
-    {
-      provide: APP_GUARD,
-      useClass: RateLimiterGuard
-    },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: RateLimiterGuard
+    // },
     UrlService
   ]
 })
