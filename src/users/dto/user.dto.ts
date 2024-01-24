@@ -30,7 +30,9 @@ export class SignupDto {
     @IsNotEmpty({
         message: "Email is required!"
     })
-    @IsEmail()
+    @IsEmail({}, {
+        message: "Invalid email address format, Please enter a valid email address!"
+    })
     @IsString()
     email: string
 
@@ -43,7 +45,9 @@ export class SignupDto {
         message: "password is required"
     })
     @IsString()
-    @MinLength(8)
+    @MinLength(8, {
+        message: "Password should be at least 8 characters long"
+    })
     password: string
 
 }
@@ -53,11 +57,15 @@ export class LoginDto {
     @ApiProperty()
     @IsNotEmpty()
     @IsString()
-    @IsEmail()
+    @IsEmail({}, {
+        message: "Invalid email address format, Please enter a valid email address!"
+    })
     email: string
 
     @ApiProperty()
-    @IsNotEmpty()
+    @IsNotEmpty({
+        message: "Password is required"
+    })
     @IsString()
     password: string
 }
@@ -73,7 +81,9 @@ export class UpdateDto {
     firstname?: string
 
     @ApiProperty()
-    @IsString()
+    @IsString({
+        message: "A valid lastname must have only a string of characters"
+    })
     @IsOptional()
     @IsNotEmpty({
         message: "Lastname value should not be empty!"
@@ -81,7 +91,9 @@ export class UpdateDto {
     lastname?: string
 
     @ApiProperty()
-    @IsEmail()
+    @IsEmail({}, {
+        message: "Please enter a valid email address"
+    })
     @IsOptional()
     @IsNotEmpty({
         message: "Email value should not be empty!"
@@ -95,24 +107,25 @@ export class PasswordResetDto {
         required: true,
         example: "example@example.com"
     })
-    @IsEmail()
+    @IsEmail({}, {
+        message: "Please enter a valid email address"
+    })
     email: string
 }
 
 
-export class verificationOTP {
-    @IsNumber()
-    @IsNotEmpty({
-        message: "OTP is required"
-    })
-    otp: string
-}
 
 
 export class ResetPasswordDto {
 
     @ApiProperty()
-    @IsString()
-    @MinLength(8)
+    @IsString({
+        message: "A valid password should be a string of characters"
+    })
+    @MinLength(8, {
+        message: "Password should be at least 8 characters long"
+    })
     newPassword: string
 }
+
+

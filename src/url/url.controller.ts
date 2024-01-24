@@ -95,6 +95,7 @@ export class UrlController {
         
         try {
             let r = await this.service.clickCounter(code, client_ip, metadata, cookie)
+            console.log(r.url)
            
             if (r.cookie !== null) {
                 res.cookie("clickid", r.cookie,{ 

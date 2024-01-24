@@ -310,77 +310,79 @@ export class UrlService implements OnModuleInit {
 
     async clickCounter(code: string, ip: string, metadata: { protocol: string; userAgent: string; referrer: string; browser: string; platform: string }, cookie) {
         try {
-            const url = `https://api.ipgeolocation.io/ipgeo?apiKey=${process.env.IP_GEOLOCATION_API_KEY}&ip=${ip}&fields=geo`
-
+            const url = `https://api.ipgeolocation.io/ipgeo?apiKey=${process.env.IP_GEOLOCATION_API_KEY}&ip=${ip}&fields=geo`;
+    
             const urlLink = await this.prisma.urlstatus.findFirst({
                 where: {
                     code,
                 },
-            })
-
+            });
+    
+            if (!urlLink) {
+                console.log("URL not found");
+                throw new NotFoundException('URL not found');
+            }
+    
             let cacheKey = `unique_click:${urlLink.code}:${cookie}`;
-
-            console.log("THE CACHE KEY: ", cacheKey)
-
-            const isUniqueClick =  await this.cacheManager.get<string>(cacheKey)
-            console.log('THE COOKIE IS: ', isUniqueClick)
-
-
+    
+            console.log("THE CACHE KEY: ", cacheKey);
+    
+            const isUniqueClick =  await this.cacheManager.get<string>(cacheKey);
+            console.log('THE COOKIE IS: ', isUniqueClick);
+    
             if (isUniqueClick) {
                 // The click is not unique, return the URL without further processing
+                console.log("Not a unique click");
                 return { url: urlLink.long_url, cookie: null };
             }
-
-            
-
-            if (urlLink) {
-
-                // Update the click counter of the clicked URL
-                const result = await this.prisma.urlstatus.update({
-                    where: {
-                        code: urlLink.code,
-                    },
-                    data: {
-                        clicks: urlLink.clicks + 1,
-                    },
-                });
-
-                const msg = { url, metadata, result }
-                if (cookie) {
-
-                    cacheKey = `unique_click:${urlLink.code}:${cookie}`
-
-                    // Mark the click as processed in the cache to prevent further processing for the same cookie
-                    await this.cacheManager.set(cacheKey, true, 691200); 
-                    
-                    this.publishClick(msg)
-
-                    return { url: urlLink.long_url, cookie: null }
-                } else {
-                    cookie = generateHexUuid() 
-
-                    console.log("GENERATED UNIQUE CODE: ", cookie)
-
-                    cacheKey = `unique_click:${urlLink.code}:${cookie}`
-
-                    // Mark the click as processed in the cache to prevent further processing for the same cookie
-                    await this.cacheManager.set(cacheKey, true, 691200); 
-
-                    this.publishClick(msg)
-
-                    return { url: urlLink.long_url, cookie }
-                }
-                
+    
+            console.log("THIS IS RESP OBJECT: ", urlLink.code);
+    
+            // Update the click counter of the clicked URL
+            const result = await this.prisma.urlstatus.update({
+                where: {
+                    code: urlLink.code,
+                },
+                data: {
+                    clicks: urlLink.clicks + 1,
+                },
+            });
+    
+            const msg = { url, metadata, result };
+    
+            if (cookie) {
+                cacheKey = `unique_click:${urlLink.code}:${cookie}`;
+    
+                // Mark the click as processed in the cache to prevent further processing for the same cookie
+                await this.cacheManager.set(cacheKey, true, 691200); 
+    
+                this.publishClick(msg);
+    
+                return { url: urlLink.long_url, cookie: null };
             } else {
-                throw new NotFoundException('URL not found');
+                cookie = generateHexUuid();
+    
+                console.log("GENERATED UNIQUE CODE: ", cookie);
+    
+                cacheKey = `unique_click:${urlLink.code}:${cookie}`;
+    
+                // Mark the click as processed in the cache to prevent further processing for the same cookie
+                await this.cacheManager.set(cacheKey, true, 691200); 
+    
+                this.publishClick(msg);
+    
+                return { url: urlLink.long_url, cookie };
             }
         } catch (error) {
             // Handle specific errors and provide appropriate responses
             if (error instanceof NotFoundException) {
+                console.log("NOT FOUND");
                 throw error;
             } else if (error.response) {
+                console.log("TYPICAL RESPONSES");
                 throw new HttpException(error.response.data, error.response.status);
             } else {
+                console.error("SERVER ERROR:", error);  // Log the actual error for debugging
                 throw new InternalServerErrorException('Internal server error');
             }
         }
