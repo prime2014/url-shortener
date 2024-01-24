@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Delete, Put, UseGuards, Req, Query, Res, HttpStatus, NotFoundException, Param } from '@nestjs/common';
+import { Body, Controller, Post, Delete, Put, UseGuards, Req, Query, Res, HttpStatus, NotFoundException, Param, Get } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { LoginDto, PasswordResetDto, ResetPasswordDto, SignupDto, UpdateDto } from './dto/user.dto';
 import { Request } from 'express';
@@ -38,7 +38,7 @@ export class UsersController {
         }
     }
 
-    @Post("/api/v1/account/activation?")
+    @Get("/api/v1/account/activation?")
     async activateAccount(@Query("token") token: string,  @Res() res: Response) {
         try {
             let resp = await this.userService.verifyToken(token)
