@@ -27,7 +27,7 @@ async function bootstrap() {
               .addServer("http://qr.isale.co.ke")
               // .addServer("http://localhost:3333")
               // .addServer("http://localhost:80")
-              // .addServer("https://ff9a-197-248-49-43.ngrok-free.app")
+              // .addServer("https://c33f-197-248-49-43.ngrok-free.app")
               
               .addBearerAuth()
               .build()
@@ -36,7 +36,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }))
   app.enableCors({origin: "*", methods:"POST"})
   app.use(cookieParser())
-  app.useGlobalFilters(new HttpExceptionFilter());
+  // app.useGlobalFilters(new HttpExceptionFilter());
   app.use(requestIp.mw())
 
   // Configure EJS as the view engine

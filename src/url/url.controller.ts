@@ -74,7 +74,7 @@ export class UrlController {
         }
     }
 
-    // @RateLimit({ keyPrefix:"myRateLimitTrend", points: 5, duration: 60, errorMessage: "This url cannot be accessed more than five times in per minute" })
+    @RateLimit({ keyPrefix:"myRateLimitTrend", points: 5, duration: 60, errorMessage: "This url cannot be accessed more than 100 times in per minute" })
     @Get("/:code")
     async clickCounter(@Req() req: Request, @Param("code") code: string, @Res({ passthrough: true }) res: Response, @Ip() ip) {
         let agent = req.headers['user-agent']
@@ -102,7 +102,7 @@ export class UrlController {
                     httpOnly: true,
                     sameSite: "strict",
                     maxAge: 1000 * 60 * 60 * 8,
-                    expires: new Date(Date.now() + (1000 * 60 * 60 * 8))
+                    expires: new Date(Date.now() + (1000 * 60 * 60 * 24))
                 });
             }
 

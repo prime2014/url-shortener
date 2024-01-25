@@ -354,7 +354,7 @@ export class UrlService implements OnModuleInit {
                 cacheKey = `unique_click:${urlLink.code}:${cookie}`;
     
                 // Mark the click as processed in the cache to prevent further processing for the same cookie
-                await this.cacheManager.set(cacheKey, true, 691200); 
+                await this.cacheManager.set(cacheKey, true, 86400); 
     
                 this.publishClick(msg);
     
@@ -367,7 +367,7 @@ export class UrlService implements OnModuleInit {
                 cacheKey = `unique_click:${urlLink.code}:${cookie}`;
     
                 // Mark the click as processed in the cache to prevent further processing for the same cookie
-                await this.cacheManager.set(cacheKey, true, 691200); 
+                await this.cacheManager.set(cacheKey, true, 86400); 
     
                 this.publishClick(msg);
     
