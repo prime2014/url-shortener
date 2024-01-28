@@ -27,7 +27,7 @@ async function bootstrap() {
               .addServer("http://qr.isale.co.ke")
               // .addServer("http://localhost:3333")
               // .addServer("http://localhost:80")
-              // .addServer("https://c33f-197-248-49-43.ngrok-free.app")
+              // .addServer("https://9709-154-159-252-85.ngrok-free.app")
               
               .addBearerAuth()
               .build()

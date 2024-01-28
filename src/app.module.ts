@@ -20,12 +20,12 @@ import { RateLimiterModule, RateLimiterGuard } from 'nestjs-rate-limiter';
 
 @Module({
   imports: [
-    // RateLimiterModule.register({
-    //   keyPrefix: "myRateLimitTrend",
-    //   points:100,
-    //   errorMessage: "Too many requests",
-    //   duration: 60
-    // }),
+    RateLimiterModule.register({
+      keyPrefix: "myRateLimitTrend",
+      points:100,
+      errorMessage: "Too many requests",
+      duration: 60
+    }),
     CacheModule.register({
       isGlobal: true,
       store: redisStore,
@@ -37,16 +37,16 @@ import { RateLimiterModule, RateLimiterGuard } from 'nestjs-rate-limiter';
       load: [sendgridConfig]
     }),
    
-    // ThrottlerModule.forRootAsync({
-    //   imports: [ConfigModule],
-    //   inject: [ConfigService],
-    //   useFactory: (config: ConfigService) => [
-    //     {
-    //       ttl: config.get("THROTTLE_TTL"),
-    //       limit: config.get("THROTTLE_LIMIT")
-    //     }
-    //   ]
-    // }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => [
+        {
+          ttl: config.get("THROTTLE_TTL"),
+          limit: config.get("THROTTLE_LIMIT")
+        }
+      ]
+    }),
     UrlModule,
     PrismaModule,
   
@@ -56,10 +56,10 @@ import { RateLimiterModule, RateLimiterGuard } from 'nestjs-rate-limiter';
     ],
   controllers: [UrlController],
   providers: [
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: RateLimiterGuard
-    // },
+    {
+      provide: APP_GUARD,
+      useClass: RateLimiterGuard
+    },
     UrlService
   ]
 })

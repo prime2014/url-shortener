@@ -312,16 +312,18 @@ export class UrlService implements OnModuleInit {
         try {
             const url = `https://api.ipgeolocation.io/ipgeo?apiKey=${process.env.IP_GEOLOCATION_API_KEY}&ip=${ip}&fields=geo`;
     
-            const urlLink = await this.prisma.urlstatus.findFirst({
-                where: {
-                    code,
-                },
-            });
+            // const urlLink = await this.prisma.urlstatus.findFirst({
+            //     where: {
+            //         code,
+            //     },
+            // });
     
-            if (!urlLink) {
-                console.log("URL not found");
-                throw new NotFoundException('URL not found');
-            }
+            // if (!urlLink) {
+            //     console.log("URL not found");
+            //     throw new NotFoundException('URL not found');
+            // }
+
+            const urlLink = await this.getUrlLinkFromCacheOrDatabase(code)
     
             let cacheKey = `unique_click:${urlLink.code}:${cookie}`;
     
@@ -386,6 +388,32 @@ export class UrlService implements OnModuleInit {
                 throw new InternalServerErrorException('Internal server error');
             }
         }
+    }
+
+    private async getUrlLinkFromCacheOrDatabase(code: string) {
+        // attempt to retrieve the url link from the cache
+        const cachedUrlLink = await this.cacheManager.get<any>(code)
+
+        if (cachedUrlLink) {
+            // if the url link is found in the cache, return it
+            return cachedUrlLink
+        }
+
+        // if the urllink is not in the cache, query the db to find it
+        const urlLink = await this.prisma.urlstatus.findFirst({
+            where: {
+                code,
+            },
+        });
+
+        if (!urlLink) {
+            console.log("URL not found");
+            throw new NotFoundException('URL not found');
+        }
+
+        await this.cacheManager.set(urlLink.code, urlLink, 3600)
+
+        return urlLink;
     }
 
 }
