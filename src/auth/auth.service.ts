@@ -27,6 +27,7 @@ export class AuthService {
 
     async setApiKey() {
         const key = generateKey()
+        console.log("THIS IS THE KEY: ", key)
         const hashed = await argon.hash(key)
         await this.prisma.apikey.upsert({
             where: {

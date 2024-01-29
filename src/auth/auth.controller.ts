@@ -17,7 +17,7 @@ export class AuthController {
     @Post("/set/key")
     async setApiKey(@Res() res: Response) {
         try {
-            let resp = this.authService.setApiKey()
+            let resp = await this.authService.setApiKey()
             return res.status(201).json(resp)
         } catch(error) {
             return res.status(500).json("There was an internal server error");
