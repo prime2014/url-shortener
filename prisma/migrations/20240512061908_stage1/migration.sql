@@ -8,8 +8,8 @@ CREATE TABLE "urlstatus" (
     "source" TEXT NOT NULL,
     "clicks" INTEGER DEFAULT 0,
     "code" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ(3) DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "urlstatus_pkey" PRIMARY KEY ("id")
 );
@@ -26,7 +26,7 @@ CREATE TABLE "clicklocation" (
     "browser" TEXT,
     "platform" TEXT,
     "referrer" TEXT,
-    "timestamp" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
+    "timestamp" TIMESTAMPTZ(3) DEFAULT CURRENT_TIMESTAMP,
     "urlId" INTEGER NOT NULL,
 
     CONSTRAINT "clicklocation_pkey" PRIMARY KEY ("id")
@@ -39,9 +39,13 @@ CREATE TABLE "users" (
     "lastname" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
+    "is_active" BOOLEAN NOT NULL DEFAULT false,
+    "verificationCode" TEXT,
     "refreshToken" TEXT,
-    "createdAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "resetToken" TEXT,
+    "resetTokenExpiry" TIMESTAMPTZ(3),
+    "createdAt" TIMESTAMPTZ(3) DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
@@ -50,8 +54,8 @@ CREATE TABLE "users" (
 CREATE TABLE "apikey" (
     "id" SERIAL NOT NULL,
     "key" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "apikey_pkey" PRIMARY KEY ("id")
 );
@@ -65,5 +69,8 @@ CREATE UNIQUE INDEX "urlstatus_code_key" ON "urlstatus"("code");
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "users_verificationCode_key" ON "users"("verificationCode");
+
 -- AddForeignKey
-ALTER TABLE "clicklocation" ADD CONSTRAINT "clicklocation_urlId_fkey" FOREIGN KEY ("urlId") REFERENCES "urlstatus"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "clicklocation" ADD CONSTRAINT "clicklocation_urlId_fkey" FOREIGN KEY ("urlId") REFERENCES "urlstatus"("id") ON DELETE CASCADE ON UPDATE CASCADE;

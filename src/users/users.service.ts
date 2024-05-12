@@ -248,27 +248,26 @@ export class UsersService {
           
             let { email } = user;
             let msg = {
-                from: "info@stanbestgroup.com",
+                from: process.env.DEFAULT_FROM_EMAIL,
                 to: email,
                 subject: "EMAIL VERIFICATION",
-                message: mergedContent,
-                requestSource: "IsaleApp"
+                html: mergedContent,
             }
-
+            await sgMail.send(msg)
             delete user.password;
 
-            let resp = await axios.post(this.configService.get<string>("EMAIL_SERVICE_BASE_URL"), {emails: [msg]}, {
-                headers: {
-                    "api-key": this.configService.get("EMAIL_SERVICE_API_KEY"),
-                }
-            }).catch(error=> {
-                console.log(error.response)
-                throw error;
-            })
+            // let resp = await axios.post(this.configService.get<string>("EMAIL_SERVICE_BASE_URL"), {emails: [msg]}, {
+            //     headers: {
+            //         "api-key": this.configService.get("EMAIL_SERVICE_API_KEY"),
+            //     }
+            // }).catch(error=> {
+            //     console.log(error.response)
+            //     throw error;
+            // })
 
-            if(resp) {
-                return "A verification email has been sent to your email address";
-            }
+            
+            return "A verification email has been sent to your email address";
+            
             // return "successful"
         } catch(error) {
             if(error instanceof PrismaClientKnownRequestError) {

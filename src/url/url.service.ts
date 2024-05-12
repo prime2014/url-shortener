@@ -310,7 +310,7 @@ export class UrlService implements OnModuleInit {
 
     async clickCounter(code: string, ip: string, metadata: { protocol: string; userAgent: string; referrer: string; browser: string; platform: string }, cookie) {
         try {
-            const url = `https://api.ipgeolocation.io/ipgeo?apiKey=${process.env.IP_GEOLOCATION_API_KEY}&ip=${ip}&fields=geo`;
+            // const url = `https://api.ipgeolocation.io/ipgeo?apiKey=${process.env.IP_GEOLOCATION_API_KEY}&ip=${ip}&fields=geo`;
     
             // const urlLink = await this.prisma.urlstatus.findFirst({
             //     where: {
@@ -327,18 +327,18 @@ export class UrlService implements OnModuleInit {
     
             let cacheKey = `unique_click:${urlLink.code}:${cookie}`;
     
-            console.log("THE CACHE KEY: ", cacheKey);
+            // console.log("THE CACHE KEY: ", cacheKey);
     
-            const isUniqueClick =  await this.cacheManager.get<string>(cacheKey);
-            console.log('THE COOKIE IS: ', isUniqueClick);
+            // const isUniqueClick =  await this.cacheManager.get<string>(cacheKey);
+            // console.log('THE COOKIE IS: ', isUniqueClick);
     
-            if (isUniqueClick) {
-                // The click is not unique, return the URL without further processing
-                console.log("Not a unique click");
-                return { url: urlLink.long_url, cookie: null };
-            }
+            // if (isUniqueClick) {
+            //     // The click is not unique, return the URL without further processing
+            //     console.log("Not a unique click");
+            //     return { url: urlLink.long_url, cookie: null };
+            // }
     
-            console.log("THIS IS RESP OBJECT: ", urlLink.code);
+            // console.log("THIS IS RESP OBJECT: ", urlLink.code);
     
             // Update the click counter of the clicked URL
             const result = await this.prisma.urlstatus.update({
@@ -350,7 +350,7 @@ export class UrlService implements OnModuleInit {
                 },
             });
     
-            const msg = { url, metadata, result };
+            // const msg = { url, metadata, result };
     
             if (cookie) {
                 cacheKey = `unique_click:${urlLink.code}:${cookie}`;
@@ -358,7 +358,7 @@ export class UrlService implements OnModuleInit {
                 // Mark the click as processed in the cache to prevent further processing for the same cookie
                 await this.cacheManager.set(cacheKey, true, 86400); 
     
-                this.publishClick(msg);
+                // this.publishClick(msg);
     
                 return { url: urlLink.long_url, cookie: null };
             } else {
@@ -371,7 +371,7 @@ export class UrlService implements OnModuleInit {
                 // Mark the click as processed in the cache to prevent further processing for the same cookie
                 await this.cacheManager.set(cacheKey, true, 86400); 
     
-                this.publishClick(msg);
+                // this.publishClick(msg);
     
                 return { url: urlLink.long_url, cookie };
             }

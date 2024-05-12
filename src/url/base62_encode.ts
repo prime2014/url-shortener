@@ -34,7 +34,7 @@ export class Base62Converter {
         const generateBase62Char = async (i: number): Promise<void> => {
           if (i >= length) return;
     
-          const byteBuffer = await this.generateRandomBytesAsync(16);
+          const byteBuffer = await this.generateRandomBytesAsync(50);
           const base62Char = this.base62String[byteBuffer[0] % 62];
     
           hash_str.push(base62Char);
@@ -50,7 +50,7 @@ export class Base62Converter {
 
 
     async getBase62Parallel(): Promise<string> {
-        const randomLength = Math.floor(Math.random() * 5) + 4;
+        const randomLength = 8;
         const encoded = await this.toBase62Async(randomLength);
         return encoded;
     }

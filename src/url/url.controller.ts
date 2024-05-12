@@ -6,7 +6,7 @@ import { UrlStatusDto, UrlUpdateDto } from './dto/urlstatus.dto';
 import { Response, Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { ApiKeyAuthGuard, JwtAuthGuard } from 'src/auth/guard/jwt.guard';
-import { ApiResponse, ApiTags,  ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import { ApiResponse, ApiTags,  ApiBearerAuth, ApiParam, ApiHeader } from '@nestjs/swagger';
 import { RateLimit } from 'nestjs-rate-limiter';
 var uap = require('ua-parser-js');
 
@@ -55,9 +55,12 @@ export class UrlController {
     }
 
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(ApiKeyAuthGuard)
     @Post("/url/shorten")
-    @ApiBearerAuth()
+    @ApiHeader({
+        name: "api-key",
+        description: "Bearer Token"
+    })
     @ApiResponse({ status: 201,  description: "The url was successfully shortened"})
     @ApiResponse({ status: 401, description: "Unauthorised" })
     @ApiResponse({ status: 400, description: "Bad request" })
@@ -74,7 +77,7 @@ export class UrlController {
         }
     }
 
-    @RateLimit({ keyPrefix:"myRateLimitTrend", points: 5, duration: 60, errorMessage: "This url cannot be accessed more than 100 times in per minute" })
+    @RateLimit({ keyPrefix:"myRateLimitTrend", points: 500, duration: 60, errorMessage: "This url cannot be accessed more than 100 times in per minute" })
     @Get("/:code")
     async clickCounter(@Req() req: Request, @Param("code") code: string, @Res({ passthrough: true }) res: Response, @Ip() ip) {
         let agent = req.headers['user-agent']

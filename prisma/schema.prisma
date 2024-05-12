@@ -10,16 +10,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
 model Urlstatus {
   id Int  @id @default(autoincrement())
 
-  delivered_to String // this can be email
+  delivered_to String? // this can be email
 
   long_url String
   short_url String @unique
 
-  status String
-  source String
+  status String?
+  source String?
 
   clicks Int? @default(0)
   code String @unique
@@ -79,3 +80,4 @@ model Apikey {
 
   @@map("apikey")
 }
+

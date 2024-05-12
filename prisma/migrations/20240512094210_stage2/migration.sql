@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "urlstatus" ALTER COLUMN "delivered_to" DROP NOT NULL,
+ALTER COLUMN "status" DROP NOT NULL,
+ALTER COLUMN "source" DROP NOT NULL;

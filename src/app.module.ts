@@ -22,7 +22,7 @@ import { RateLimiterModule, RateLimiterGuard } from 'nestjs-rate-limiter';
   imports: [
     RateLimiterModule.register({
       keyPrefix: "myRateLimitTrend",
-      points:100,
+      points:1000,
       errorMessage: "Too many requests",
       duration: 60
     }),
