@@ -100,11 +100,11 @@ export class UrlService implements OnModuleInit {
         }
     }
 
-    async updateShortenedUrls(id: number, data: UrlUpdateDto) {
+    async updateShortenedUrls(code: string, data: UrlUpdateDto) {
         try {
             let url = await this.prisma.urlstatus.update({
                 where: {
-                    id
+                    code
                 },
                 data
             })
@@ -115,11 +115,11 @@ export class UrlService implements OnModuleInit {
     }
 
 
-    async deleteShortenedUrls(id: number) {
+    async deleteShortenedUrls(code: string) {
         try {
             let url = await this.prisma.urlstatus.delete({
                 where: {
-                    id
+                    code
                 }
             })
 
@@ -209,7 +209,7 @@ export class UrlService implements OnModuleInit {
         
         // if string is not a valid url return a bad request
         try {
-            if (!isURL(longUrl)) throw new BadRequestException('String Must be a Valid URL');
+            if (longUrl !== null && !isURL(longUrl)) throw new BadRequestException('String Must be a Valid URL');
            
             // base62 encoding of the counter
             let myresp = await getBase62EncodedString()
@@ -242,7 +242,7 @@ export class UrlService implements OnModuleInit {
             let urlResponse = await this.prisma.urlstatus.create({
                 data: {
                     delivered_to: delivered_to,
-                    long_url: longUrl,
+                    long_url: longUrl ? longUrl : null,
                     short_url: short_code_url,
                     status: "200/OK",
                     source: source,
@@ -257,7 +257,8 @@ export class UrlService implements OnModuleInit {
             if (urlResponse) {
                 return {
                     longUrl,
-                    shortUrl: short_code_url
+                    shortUrl: short_code_url,
+                    code: myresp
                 }
             }
             
@@ -307,39 +308,36 @@ export class UrlService implements OnModuleInit {
         return
     }
 
-
     async clickCounter(code: string, ip: string, metadata: { protocol: string; userAgent: string; referrer: string; browser: string; platform: string }, cookie) {
         try {
             // const url = `https://api.ipgeolocation.io/ipgeo?apiKey=${process.env.IP_GEOLOCATION_API_KEY}&ip=${ip}&fields=geo`;
-    
-            // const urlLink = await this.prisma.urlstatus.findFirst({
-            //     where: {
-            //         code,
-            //     },
-            // });
-    
+
+            
+
+            const urlLink = await this.getUrlLinkFromCacheOrDatabase(code)
+
             // if (!urlLink) {
             //     console.log("URL not found");
             //     throw new NotFoundException('URL not found');
             // }
 
-            const urlLink = await this.getUrlLinkFromCacheOrDatabase(code)
-    
+            // const urlLink = await this.getUrlLinkFromCacheOrDatabase(code)
+
             let cacheKey = `unique_click:${urlLink.code}:${cookie}`;
-    
+
             // console.log("THE CACHE KEY: ", cacheKey);
-    
+
             // const isUniqueClick =  await this.cacheManager.get<string>(cacheKey);
             // console.log('THE COOKIE IS: ', isUniqueClick);
-    
+
             // if (isUniqueClick) {
             //     // The click is not unique, return the URL without further processing
             //     console.log("Not a unique click");
             //     return { url: urlLink.long_url, cookie: null };
             // }
-    
+
             // console.log("THIS IS RESP OBJECT: ", urlLink.code);
-    
+
             // Update the click counter of the clicked URL
             const result = await this.prisma.urlstatus.update({
                 where: {
@@ -349,30 +347,30 @@ export class UrlService implements OnModuleInit {
                     clicks: urlLink.clicks + 1,
                 },
             });
-    
+
             // const msg = { url, metadata, result };
-    
+
             if (cookie) {
                 cacheKey = `unique_click:${urlLink.code}:${cookie}`;
-    
+
                 // Mark the click as processed in the cache to prevent further processing for the same cookie
-                await this.cacheManager.set(cacheKey, true, 86400); 
-    
+                await this.cacheManager.set(cacheKey, true, 86400);
+
                 // this.publishClick(msg);
-    
+
                 return { url: urlLink.long_url, cookie: null };
             } else {
                 cookie = generateHexUuid();
-    
+
                 console.log("GENERATED UNIQUE CODE: ", cookie);
-    
+
                 cacheKey = `unique_click:${urlLink.code}:${cookie}`;
-    
+
                 // Mark the click as processed in the cache to prevent further processing for the same cookie
-                await this.cacheManager.set(cacheKey, true, 86400); 
-    
+                await this.cacheManager.set(cacheKey, true, 86400);
+
                 // this.publishClick(msg);
-    
+
                 return { url: urlLink.long_url, cookie };
             }
         } catch (error) {
@@ -411,7 +409,10 @@ export class UrlService implements OnModuleInit {
             throw new NotFoundException('URL not found');
         }
 
-        await this.cacheManager.set(urlLink.code, urlLink, 3600)
+        if(urlLink.long_url) {
+            await this.cacheManager.set(urlLink.code, urlLink, 3600)
+        }
+        
 
         return urlLink;
     }

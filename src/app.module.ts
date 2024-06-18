@@ -6,6 +6,7 @@ import { UrlModule } from './url/url.module';
 // import { UrlService } from './url/url.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 // import { PrismaModule } from './prisma/prisma.module';
+import { ServeStaticModule } from "@nestjs/serve-static";
 
 import { ThrottlerModule } from "@nestjs/throttler";
 import { UsersModule } from './users/users.module';
@@ -17,9 +18,13 @@ import sendgridConfig from "./sendgrid.config";
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from "cache-manager-redis-store";
 import { RateLimiterModule, RateLimiterGuard } from 'nestjs-rate-limiter';
+import { join } from 'path';
 
 @Module({
   imports: [
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'url')
+    }),
     RateLimiterModule.register({
       keyPrefix: "myRateLimitTrend",
       points:1000,

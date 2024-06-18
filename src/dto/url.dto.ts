@@ -1,24 +1,24 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString, IsNotEmpty, IsEmail } from "class-validator";
+import { IsString, IsNotEmpty, IsEmail, IsOptional, IsEmpty } from "class-validator";
 
 
 export class ShortenURLDto {
     @ApiProperty({
         example: "http://longestpossibleurl.com",
-        required: true
     })
-    @IsNotEmpty()
-    @IsString()
+    @IsOptional()
     longUrl: string
 
     @ApiProperty({
         example: "POS",
     })
+    @IsOptional()
     source: string
 
     @ApiProperty({
         example: "example@company1.com",
     })
+    @IsOptional()
     delivered_to: string
 
 }

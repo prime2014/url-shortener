@@ -22,15 +22,7 @@ export class UrlStatusDto {
 
 
 export class UrlUpdateDto {
-    @ApiProperty({
-        example: "example@example.com",
-        required: false
-    })
-    @IsEmail({}, {
-        message: "A valid email address is required for 'delivered_to'"
-    })
-    delivered_to?: string
-
+   
     @ApiProperty({
         example: "https://www.example.com",
         required: false

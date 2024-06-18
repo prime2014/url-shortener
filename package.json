@@ -6,6 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "copy:html": "copyfiles -u 1 src/url/notFound.html dist/url",
     "prisma:test:deploy": "dotenv -e .env.test -- prisma migrate deploy",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -29,6 +30,7 @@
     "@nestjs/jwt": "^10.2.0",
     "@nestjs/passport": "^10.0.2",
     "@nestjs/platform-express": "^10.3.0",
+    "@nestjs/serve-static": "^4.0.2",
     "@nestjs/swagger": "^7.1.16",
     "@nestjs/throttler": "^5.0.1",
     "@prisma/client": "^5.6.0",

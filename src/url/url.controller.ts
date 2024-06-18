@@ -7,12 +7,14 @@ import { Response, Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { ApiKeyAuthGuard, JwtAuthGuard } from 'src/auth/guard/jwt.guard';
 import { ApiResponse, ApiTags,  ApiBearerAuth, ApiParam, ApiHeader } from '@nestjs/swagger';
+import * as path from 'path';
+import * as fs from "fs";
 import { RateLimit } from 'nestjs-rate-limiter';
 var uap = require('ua-parser-js');
 
 
 interface UrlUpdateParam {
-    id: string
+    code: string
 }
 
 
@@ -109,10 +111,41 @@ export class UrlController {
                 });
             }
 
-            res.redirect(HttpStatus.FOUND, r.url);  
+            if (r.url !== null) {
+                res.redirect(HttpStatus.FOUND, r.url);
+            } else {
+                const htmlFilePath = path.resolve(__dirname, '../url/notFound.html'); // Adjust the path based on your project structure
+                console.log("***************************OUR DIR NAME******************************");
+                console.log(htmlFilePath);
+                console.log("*************************END*******************************");
+                // Render an HTML page since r.url is null
+                const htmlString = `
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Isale</title>
+                    <style>
+                       body {
+                            text-align: center;
+                       }
+                    </style>
+                </head>
+                <body>
+                    <h1>ETIMS RECEIPT PROCESSING IN PROGRESS</h1>
+                    <hr>
+                    <p>Your receipt is currently being processed. It will be available shortly.</p>
+                    
+                    <p>Thank you for your patience</p>
+                </body>
+                </html>
+                `;
+                res.status(HttpStatus.OK).send(htmlString);
+            }
         } catch(error) {
             const { status, response } = error;
-                
+            console.log(response)
             // Check for circular structures before JSON conversion
             const sanitizedResponse = removeCircularReferences(response);
 
@@ -122,15 +155,18 @@ export class UrlController {
     }
 
 
-    @UseGuards(JwtAuthGuard)
-    @ApiBearerAuth()
+    @UseGuards(ApiKeyAuthGuard)
+    @ApiHeader({
+        name: "api-key",
+        description: "Bearer Token"
+    })
     @ApiResponse({ status: 200, description: "Successful" })
-    @ApiParam({ name: "id", type: Number, description: "User id field as saved on the database" })
-    @Put("/api/v1/:id/update")
+    @ApiParam({ name: "code", type: String, description: "Short code assinged to the end of each url" })
+    @Put("/api/v1/:code/update")
     async updateUrl(@Param() param: UrlUpdateParam, @Body() dto: UrlUpdateDto, @Res() res: Response) {
-        let { id } = param;
+        let { code } = param;
         try {
-            let url = await this.service.updateShortenedUrls(parseInt(id), dto)
+            let url = await this.service.updateShortenedUrls(code, dto)
             return res.status(HttpStatus.OK).json(url)
         } catch(error) {
             let { status, response } = error;
@@ -138,15 +174,18 @@ export class UrlController {
         }
     }
 
-    @UseGuards(JwtAuthGuard)
-    @ApiBearerAuth()
+    @UseGuards(ApiKeyAuthGuard)
+    @ApiHeader({
+        name: "api-key",
+        description: "Bearer Token"
+    })
     @ApiResponse({ status: 200, description: "Successful" })
-    @ApiParam({ name: "id", type: Number, description: "User id field as saved on the database" })
-    @Delete("/api/v1/:id/delete")
+    @ApiParam({ name: "code", type: String, description: "Short code assinged to each url" })
+    @Delete("/api/v1/:code/delete")
     async deleteUrl(@Param() param: UrlUpdateParam, @Res() res: Response) {
-        let { id } = param;
+        let { code } = param;
         try {
-            let url = await this.service.deleteShortenedUrls(parseInt(id))
+            let url = await this.service.deleteShortenedUrls(code)
             return res.status(HttpStatus.NO_CONTENT).json(url)
         } catch(error) {
             let { status, response } = error;

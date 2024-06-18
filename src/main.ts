@@ -26,6 +26,7 @@ async function bootstrap() {
               .addTag("url")
               .addServer("http://qr.isale.co.ke")
               // .addServer("http://localhost:3333")
+              // .addServer("https://1663-102-0-220-236.ngrok-free.app")
               // .addServer("https://4210-102-5-9-180.ngrok-free.app")
               // .addServer("http://localhost:80")
               // .addServer("https://9709-154-159-252-85.ngrok-free.app")

@@ -16,7 +16,7 @@ model Urlstatus {
 
   delivered_to String? // this can be email
 
-  long_url String
+  long_url String?
   short_url String @unique
 
   status String?
